@@ -6,7 +6,7 @@ import requests
 
 logger = logging.getLogger(__name__)
 formatter = logging.Formatter("%(asctime)s:%(levelname)s:%(name)s:%(message)s")
-file_handler = logging.FileHandler("pysmwrapper/log/whatsapp_api.log")
+file_handler = logging.FileHandler("whatsapp_api.log")
 file_handler.setFormatter(formatter)
 logger.addHandler(file_handler)
 
@@ -19,8 +19,8 @@ class WhatsApp:
         Intiate WhatsApp object with token, wa_id
 
         :params
-            token[str] - Token from facebook portal to run APIs.
-            wa_id[str] - Test number given on the developer portal.
+            token[str] - Token from facebook portal to run APIs
+            wa_id[str] - Test number given on the developer portal
         :return
             whatsapp object
         """
@@ -39,14 +39,14 @@ class WhatsApp:
 
     def send_message(self,message, phone_number,preview_url=True, recipient_type="individual"):
         """
-        Send text simple message to phone_number.
+        Send text simple message to phone_number
         :params
-            message[str]        - Message to send.
+            message[str]        - Message to send
             phone_number[str]   - Phone number of user with country code without '+'.
-            preview_url[bool]   - Whether to send links with preview or not.
+            preview_url[bool]   - Whether to send links with preview or not
             recipient_type[str] - Type of recipient group or individual
         :return
-            json response of the request made.
+            Response object
         """
         resp = None
         try:
@@ -77,13 +77,15 @@ class WhatsApp:
         """
         Send media message(audio, document, image, video) to phone_number.
         :params
-            media_type[str]   - Type of media(audio, document, image, video) to send.
-            phone_number[str] - Phone number of user with country code without '+'.
+            media_type[str]   - Type of media(audio, document, image, video) to send
+            phone_number[str] - Phone number of user with country code without '+'
             media_link[str]   - Link of media if access_type is True or Media ID if access_type
                                 is False
             access_type[bool] - True means send media with media_link, False means send media
-                                with id.
-            caption[str]      - Caption of the media.
+                                with id
+            caption[str]      - Caption of the media
+        :return
+            Response object
         """
         resp = None
         try:
@@ -97,6 +99,43 @@ class WhatsApp:
             logger.error("Error in send message: %s",(err))
         else:
             return resp
+
+    def send_location  (self,
+                        longitude,
+                        latitude,
+                        location_name,
+                        location_address,
+                        phone_number):
+        """
+        Send location message to phone_number
+        :params
+            longitude[str]: Longitude of the location
+            latitude[str]: Latitude of the location
+            location_name[str]: Name of the location
+            location_address[str]: Address of the location
+            phone_number[str]: Phone number of the user with country code wihout +
+        :return
+            Response object
+        """
+        data = {
+            "messaging_product": "whatsapp",
+            "to": phone_number,
+            "type": "location",
+            "location": {
+                "longitude": longitude,
+                "latitude": latitude,
+                "name": location_name,
+                "address": location_address,
+            },
+        }
+        resp = None
+        try:
+            resp = requests.post(self.url, headers=self.headers, json=data)
+        except Exception as err:
+            logger.error("Error in send message: %s",(err))
+        else:
+            return resp
+
 
 
     def _get_media_payload (self,
