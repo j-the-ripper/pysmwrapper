@@ -63,8 +63,7 @@ class WhatsApp:
             resp = requests.post(url=self.url, headers=self.headers, json=data, timeout=10)
         except Exception as err:
             logger.error("Error in send message: %s",str(err))
-        else:
-            return resp
+        return resp
 
     def send_media (self,
                     media_link,
@@ -94,11 +93,10 @@ class WhatsApp:
             if media_type != "audio":
                 data[media_type]["caption"] = caption
 
-            resp = requests.post(self.url, headers=self.headers, json=data)
+            resp = requests.post(self.url, headers=self.headers, json=data, timeout = 10)
         except Exception as err:
             logger.error("Error in send message: %s",(err))
-        else:
-            return resp
+        return resp
 
     def send_location  (self,
                         longitude,
@@ -130,12 +128,10 @@ class WhatsApp:
         }
         resp = None
         try:
-            resp = requests.post(self.url, headers=self.headers, json=data)
+            resp = requests.post(self.url, headers=self.headers, json=data, timeout = 10)
         except Exception as err:
             logger.error("Error in send message: %s",(err))
-        else:
-            return resp
-
+        return resp
 
 
     def _get_media_payload (self,
@@ -155,14 +151,12 @@ class WhatsApp:
                             "link" : media_link,
                         }
                     }
-        else:
-            # Payload with media id.
-            return {
-                        "messaging_product": "whatsapp",
-                        "recipient_type": recipient_type,
-                        "to": phone_number,
-                        "type": media_type,
-                        media_type: {
-                            "id" : media_link,
-                        }
+        return {
+                    "messaging_product": "whatsapp",
+                    "recipient_type": recipient_type,
+                    "to": phone_number,
+                    "type": media_type,
+                    media_type: {
+                        "id" : media_link,
                     }
+                }
