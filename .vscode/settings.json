@@ -1,8 +1,0 @@
-{
-    "askjarvis.WelcomePanel": true,
-    "python.testing.pytestArgs": [
-        "pysmwrapper"
-    ],
-    "python.testing.unittestEnabled": false,
-    "python.testing.pytestEnabled": true
-}
