@@ -14,28 +14,28 @@ class WhatsApp:
     """
     Initiate WhatsApp object
     """
-    def __init__(self, token=None, wa_id=None):
+    def __init__(self, token=None, phone_number_id=None):
         """
-        Intiate WhatsApp object with token, wa_id
+        Intiate WhatsApp object with token, phone_number_id
 
         :params
             token[str] - Token from facebook portal to run APIs
-            wa_id[str] - Test number given on the developer portal
+            phone_number_id[str] - Test number given on the developer portal
         :return
             whatsapp object
         """
         self.token = token
-        self.wa_id = wa_id
+        self.phone_number_id = phone_number_id
         self.base_url = "https://graph.facebook.com/v14.0"
-        self.url = f"{self.base_url}/{self.wa_id}/messages"
+        self.url = f"{self.base_url}/{self.phone_number_id}/messages"
         self.headers = {
             "Content-Type": "application/json",
             "Authorization": f"Bearer {self.token}"
         }
     def __str__(self):
-        return f"WhatsApp-{self.wa_id}"
+        return f"WhatsApp-{self.phone_number_id}"
     def __repr__(self):
-        return f"{self.__class__.__name__}('{self.wa_id}','{self.token}')"
+        return f"{self.__class__.__name__}('{self.phone_number_id}','{self.token}')"
 
     def send_message(self,message, phone_number,preview_url=True, recipient_type="individual"):
         """
@@ -95,22 +95,22 @@ class WhatsApp:
 
             resp = requests.post(self.url, headers=self.headers, json=data, timeout = 10)
         except Exception as err:
-            logger.error("Error in send message: %s",(err))
+            logger.error("Error in send media: %s",(err))
         return resp
 
     def send_location  (self,
                         longitude,
                         latitude,
-                        location_name,
-                        location_address,
-                        phone_number):
+                        phone_number,
+                        location_name=None,
+                        location_address=None):
         """
         Send location message to phone_number
         :params
             longitude[str]: Longitude of the location
             latitude[str]: Latitude of the location
             location_name[str]: Name of the location
-            location_address[str]: Address of the location
+            location_address[str]: Address of the location. Only displayed if name is present.
             phone_number[str]: Phone number of the user with country code wihout +
         :return
             Response object
@@ -126,12 +126,38 @@ class WhatsApp:
                 "address": location_address,
             },
         }
+
+        if location_name is not None:
+            data["location"]["name"] = location_name
+            data["location"]["address"] = location_address
+
         resp = None
         try:
             resp = requests.post(self.url, headers=self.headers, json=data, timeout = 10)
         except Exception as err:
-            logger.error("Error in send message: %s",(err))
+            logger.error("Error in send location: %s",(err))
         return resp
+
+    def upload_media(self):
+        """
+        Upload media to WA server
+        :params
+            path[str]: Absolute path of the file
+        :return
+            Response object
+        """
+        resp = None
+        try:
+            data = {
+                    "file" : open("/home/jay/cover.jpg","rb").read()
+            }
+            headers = self.headers
+            headers["Content-Type"] = "image/jpeg"
+            resp = requests.post(f"{self.base_url}/{self.phone_number_id}/media", headers=headers,data=data,
+             timeout = 10)
+        except Exception as err:
+            logger.error("Error in upload media: %s",(err))
+        return resp       
 
 
     def _get_media_payload (self,
