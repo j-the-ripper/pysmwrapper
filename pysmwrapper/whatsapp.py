@@ -47,7 +47,7 @@ class WhatsApp:
             preview_url[bool]   - Whether to send links with preview or not
             recipient_type[str] - Type of recipient group or individual
         :return
-            Response object
+            Response JSON
         """
         data = {
                 "messaging_product": "whatsapp",
@@ -83,7 +83,7 @@ class WhatsApp:
                                 with id
             caption[str]      - Caption of the media
         :return
-            Response object
+            Response JSON
         """
         
         data = self._get_media_payload(media_link,phone_number,media_type,access_type,
@@ -110,7 +110,7 @@ class WhatsApp:
                                     Only displayed if name is present.
             phone_number[str]: Phone number of the user with country code wihout +
         :return
-            Response object
+            Response JSON
         """
         data = {
             "messaging_product": "whatsapp",
@@ -136,7 +136,7 @@ class WhatsApp:
         :params
             file_path[str]: Absolute path of the file
         :return
-            Response object
+            Response JSON
         """
         file_name = file_path.split("/")[-1]
         mime_type = str(mimetypes.guess_type(file_path)[0])
@@ -149,10 +149,50 @@ class WhatsApp:
 
         try:
             resp = requests.post(self.upload_url, headers=self.upload_headers, data=data, 
-                                    files=files, timeout = 10)
+                                    files=files, timeout=10)
             return resp.json()
         except ConnectErrs as err:
             return {'connect_error':{'message' : str(err)}}     
+
+
+    def retrieve_media_url(self,media_id):
+        """
+        Get media information such as url,hash,file_size for given media_id
+        :params
+            media_id[str] : media_id received from upload_media API
+        :return
+            Response JSON
+        """
+        resp = requests.get(self.upload_url, headers=self.upload_headers, 
+                            data=data, files=files, timeout=10)
+        return resp.json()
+
+    def download_media( self,
+                        file_name,
+                        file_path,
+                        media_link,
+                        mime_type):
+        """
+        Saves media content to given file path
+        :params
+            media_link[str] : media_link received from retrieve_media_url API
+            file_name[str] : Name of the file you want to save
+            file_path[str]: Absolute path of the file
+            mime_type[str] : MimeType of file to be saved
+        :return
+            Internal response JSON
+        """
+
+        try:
+            file_extension = mimetypes.guess_extension(mime_type)
+            file_path += (filename + file_extension)
+            resp_content = requests.get(media_link,headers=self.upload_headers,stream=True)
+            with open(file_path, 'wb') as out_file:
+                shutil.copyfileobj(resp_content.raw, out_file)
+            del resp_content
+            return {'success' : {'message' : 'File saved successfully'}}
+        except ConnectErrs as err:
+            return {'connect_error':{'message' : str(err)}}    
 
     def _call_post(self,data):
         try:
