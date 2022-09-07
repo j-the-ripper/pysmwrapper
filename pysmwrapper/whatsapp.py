@@ -1,14 +1,11 @@
 """
 Utility to send text and media messages with WhatsApp's cloud APIs
 """
-import logging
 import requests
+import mimetypes
 
-logger = logging.getLogger(__name__)
-formatter = logging.Formatter("%(asctime)s:%(levelname)s:%(name)s:%(message)s")
-file_handler = logging.FileHandler("whatsapp_api.log")
-file_handler.setFormatter(formatter)
-logger.addHandler(file_handler)
+ConnectErrs =  (requests.exceptions.Timeout, 
+                requests.exceptions.ConnectionError)
 
 class WhatsApp:
     """
@@ -28,6 +25,10 @@ class WhatsApp:
         self.phone_number_id = phone_number_id
         self.base_url = "https://graph.facebook.com/v14.0"
         self.url = f"{self.base_url}/{self.phone_number_id}/messages"
+        self.upload_url = f"{self.base_url}/{self.phone_number_id}/media"
+        self.upload_headers = {
+            "Authorization": f"Bearer {self.token}"
+        }
         self.headers = {
             "Content-Type": "application/json",
             "Authorization": f"Bearer {self.token}"
@@ -48,28 +49,26 @@ class WhatsApp:
         :return
             Response object
         """
-        resp = None
-        try:
-            data = {
-                    "messaging_product": "whatsapp",
-                    "recipient_type": recipient_type,
-                    "to": phone_number,
-                    "type": "text",
-                    "text": {
-                            "preview_url": preview_url,
-                            "body": message
-                        },
-                    }
-            resp = requests.post(url=self.url, headers=self.headers, json=data, timeout=10)
-        except Exception as err:
-            logger.error("Error in send message: %s",str(err))
-        return resp
+        data = {
+                "messaging_product": "whatsapp",
+                "recipient_type": recipient_type,
+                "to": phone_number,
+                "type": "text",
+                "text": {
+                        "preview_url": preview_url,
+                        "body": message
+                    },
+                }
+
+        return self._call_post(data)
+
+
 
     def send_media (self,
                     media_link,
                     phone_number,
                     media_type,
-                    access_type=True,
+                    access_type=True,   
                     caption=None,
                     recipient_type="individual"
                     ):
@@ -86,17 +85,14 @@ class WhatsApp:
         :return
             Response object
         """
-        resp = None
-        try:
-            data = self._get_media_payload(media_link,phone_number,media_type,access_type,
-                                            recipient_type)
-            if media_type != "audio":
-                data[media_type]["caption"] = caption
+        
+        data = self._get_media_payload(media_link,phone_number,media_type,access_type,
+                                        recipient_type)
+        if media_type != "audio":
+            data[media_type]["caption"] = caption
 
-            resp = requests.post(self.url, headers=self.headers, json=data, timeout = 10)
-        except Exception as err:
-            logger.error("Error in send media: %s",(err))
-        return resp
+        return self._call_post(data)
+        
 
     def send_location  (self,
                         longitude,
@@ -110,7 +106,8 @@ class WhatsApp:
             longitude[str]: Longitude of the location
             latitude[str]: Latitude of the location
             location_name[str]: Name of the location
-            location_address[str]: Address of the location. Only displayed if name is present.
+            location_address[str]: Address of the location. 
+                                    Only displayed if name is present.
             phone_number[str]: Phone number of the user with country code wihout +
         :return
             Response object
@@ -131,33 +128,38 @@ class WhatsApp:
             data["location"]["name"] = location_name
             data["location"]["address"] = location_address
 
-        resp = None
-        try:
-            resp = requests.post(self.url, headers=self.headers, json=data, timeout = 10)
-        except Exception as err:
-            logger.error("Error in send location: %s",(err))
-        return resp
+        return self._call_post(data)
 
-    def upload_media(self):
+    def upload_media(self,file_path):
         """
         Upload media to WA server
         :params
-            path[str]: Absolute path of the file
+            file_path[str]: Absolute path of the file
         :return
             Response object
         """
-        resp = None
+        file_name = file_path.split("/")[-1]
+        mime_type = str(mimetypes.guess_type(file_path)[0])
+        data = {
+                'messaging_product': 'whatsapp'
+                }
+        files=[
+          ('file',(file_name,open(file_path,'rb'),mime_type))
+        ]
+
         try:
-            data = {
-                    "file" : open("/home/jay/cover.jpg","rb").read()
-            }
-            headers = self.headers
-            headers["Content-Type"] = "image/jpeg"
-            resp = requests.post(f"{self.base_url}/{self.phone_number_id}/media", headers=headers,data=data,
-             timeout = 10)
-        except Exception as err:
-            logger.error("Error in upload media: %s",(err))
-        return resp       
+            resp = requests.post(self.upload_url, headers=self.upload_headers, data=data, 
+                                    files=files, timeout = 10)
+            return resp.json()
+        except ConnectErrs as err:
+            return {'connect_error':{'message' : str(err)}}     
+
+    def _call_post(self,data):
+        try:
+            resp = requests.post(url=self.url, headers=self.headers, json=data, timeout=10)
+            return resp.json()
+        except ConnectErrs as err:
+            return {'connect_error':{'message' : str(err)}}       
 
 
     def _get_media_payload (self,

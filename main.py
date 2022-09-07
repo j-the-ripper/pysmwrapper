@@ -5,6 +5,6 @@ from pysmwrapper import WhatsApp
 load_dotenv()
 token = os.getenv("TOKEN")
 print(token)
-whatsapp = WhatsApp(os.getenv("TOKEN"), wa_id=os.getenv("WA_ID"))
-print(whatsapp.send_location("79.303360","19.970324", "location", "civil lines", "919405235423"))
+whatsapp = WhatsApp(os.getenv("TOKEN"), phone_number_id=os.getenv("PHONE_NUMBER_ID"))
+print(whatsapp.upload_media("/home/jaypatel/pic.png"))
 #print(whatsapp.send_media('https://i.imgur.com/FXvlGEd.jpeg','919405235423','image',caption='this').text)
